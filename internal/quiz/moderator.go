@@ -29,7 +29,8 @@ func NewModerator(reader Reader) *Moderator {
 
 // Start start quiz game
 func (m *Moderator) Start(duration time.Duration) error {
-	if err := m.prepareProblems(); err != nil {
+	problems, err := m.fileReader.Read()
+	if err != nil {
 		return err
 	}
 
@@ -38,7 +39,7 @@ func (m *Moderator) Start(duration time.Duration) error {
 		ticker := time.NewTicker(duration * time.Second)
 		defer ticker.Stop()
 
-		for i, problem := range m.problems {
+		for i, problem := range problems {
 			fmt.Printf("Question #%d: %s= ", i+1, problem.Question)
 
 			answerChannel := make(chan string)
@@ -49,7 +50,7 @@ func (m *Moderator) Start(duration time.Duration) error {
 
 			select {
 			case <-ticker.C:
-				fmt.Printf("\nCongratulation, you've answer %d of %d questions.\n", m.score, len(m.problems))
+				fmt.Printf("\nCongratulation, you've answer %d of %d questions.\n", m.score, len(problems))
 				return
 			case answer := <-answerChannel:
 				if strings.TrimSpace(answer) == problem.Answer {
@@ -58,16 +59,6 @@ func (m *Moderator) Start(duration time.Duration) error {
 			}
 		}
 	}()
-
-	return nil
-}
-
-func (m *Moderator) prepareProblems() error {
-	problems, err := m.fileReader.Read()
-	if err != nil {
-		return err
-	}
-	m.problems = problems
 
 	return nil
 }
