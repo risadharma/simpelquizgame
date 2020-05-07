@@ -2,40 +2,32 @@ package quiz
 
 import (
 	"encoding/csv"
-	"fmt"
-	"os"
+	"io"
+	"log"
 )
 
 // CSVReader implement reader.Reader
 type CSVReader struct {
-	filepath string
 }
 
 // NewCSVReader return new CSVReader
-func NewCSVReader(filepath string) *CSVReader {
-	return &CSVReader{
-		filepath: filepath,
-	}
+func NewCSVReader() Reader {
+	return &CSVReader{}
 }
 
 // Read represent read
-func (r *CSVReader) Read() ([]*Problem, error) {
-	csvFile, err := os.Open(r.filepath)
-	if err != nil {
-		return nil, fmt.Errorf("error when opening file, %v", err)
-	}
-
-	csvReader := csv.NewReader(csvFile)
+func (r *CSVReader) Read(rdr io.Reader) []*Problem {
+	csvReader := csv.NewReader(rdr)
 
 	records, err := csvReader.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("error when reading records, %v", err)
+		log.Fatalf("error when reading records, %v", err)
 	}
 
 	problems := make([]*Problem, len(records))
 	for i, record := range records {
-		problems[i] = &Problem{Question: record[0], Answer: record[1]}
+		problems[i] = &Problem{question: record[0], answer: record[1]}
 	}
 
-	return problems, nil
+	return problems
 }

@@ -17,21 +17,23 @@ var (
 func main() {
 	flag.Parse()
 
-	csvReader := quiz.NewCSVReader(*filepath)
-	moderator := quiz.NewModerator(csvReader)
+	csvReader := quiz.NewCSVReader()
+
+	file, err := os.Open(*filepath)
+	if err != nil {
+		exit(err)
+	}
+
+	quiz := quiz.NewQuiz(csvReader.Read(file))
 
 	var key string
 	fmt.Print("Press enter to start the quiz!")
 	fmt.Scanf("%s\n", &key)
 
-	if err := moderator.Start(time.Duration(*duration)); err != nil {
-		exitWithError(err)
-	}
-
-	os.Exit(1)
+	quiz.Run(time.Duration(*duration))
 }
 
-func exitWithError(err error) {
+func exit(err error) {
 	fmt.Printf("error occured: %v\n", err)
 	os.Exit(1)
 }
