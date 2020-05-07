@@ -1,10 +1,9 @@
 package quiz
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
+	"time"
 )
 
 // Problem represent quiz problem.
@@ -16,9 +15,9 @@ type Problem struct {
 
 // Moderator represent quiz moderator that generate problems and human answer
 type Moderator struct {
+	problems   []*Problem
+	score      int
 	fileReader Reader
-
-	playerScore int
 }
 
 // NewModerator return new Moderator
@@ -28,27 +27,47 @@ func NewModerator(reader Reader) *Moderator {
 	}
 }
 
-// Play playing quiz
-func (m *Moderator) Play() {
+// Start start quiz game
+func (m *Moderator) Start(duration time.Duration) error {
+	if err := m.prepareProblems(); err != nil {
+		return err
+	}
+
+	func() {
+		var answer string
+		ticker := time.NewTicker(duration * time.Second)
+		defer ticker.Stop()
+
+		for i, problem := range m.problems {
+			fmt.Printf("Question #%d: %s= ", i+1, problem.Question)
+
+			answerChannel := make(chan string)
+			go func() {
+				fmt.Scanf("%s\n", &answer)
+				answerChannel <- answer
+			}()
+
+			select {
+			case <-ticker.C:
+				fmt.Printf("\nCongratulation, you've answer %d of %d questions.\n", m.score, len(m.problems))
+				return
+			case answer := <-answerChannel:
+				if strings.TrimSpace(answer) == problem.Answer {
+					m.score++
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (m *Moderator) prepareProblems() error {
 	problems, err := m.fileReader.Read()
 	if err != nil {
-		panic(err)
+		return err
 	}
+	m.problems = problems
 
-	totalProblems := len(problems)
-	reader := bufio.NewReader(os.Stdin)
-
-	for i, problem := range problems {
-		fmt.Printf("question %d of %d. %s: ", i+1, totalProblems, problem.Question)
-		answer, err := reader.ReadString('\n')
-		if err != nil {
-			panic(err)
-		}
-
-		if strings.Trim(answer, "\n") == problem.Answer {
-			m.playerScore++
-		}
-	}
-
-	fmt.Printf("Congratulation, you've answer %d questions.\n", m.playerScore)
+	return nil
 }

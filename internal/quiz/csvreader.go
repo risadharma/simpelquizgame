@@ -2,7 +2,7 @@ package quiz
 
 import (
 	"encoding/csv"
-	"io"
+	"fmt"
 	"os"
 )
 
@@ -22,23 +22,19 @@ func NewCSVReader(filepath string) *CSVReader {
 func (r *CSVReader) Read() ([]*Problem, error) {
 	csvFile, err := os.Open(r.filepath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error when opening file, %v", err)
 	}
 
 	csvReader := csv.NewReader(csvFile)
 
-	var problems []*Problem
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("error when reading records, %v", err)
+	}
 
-	for {
-		record, err := csvReader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		problems = append(problems, &Problem{Question: record[0], Answer: record[1]})
+	problems := make([]*Problem, len(records))
+	for i, record := range records {
+		problems[i] = &Problem{Question: record[0], Answer: record[1]}
 	}
 
 	return problems, nil
