@@ -15,7 +15,6 @@ type Problem struct {
 
 // Moderator represent quiz moderator that generate problems and human answer
 type Moderator struct {
-	problems   []*Problem
 	score      int
 	fileReader Reader
 }
